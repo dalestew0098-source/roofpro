@@ -1,5 +1,4 @@
 export default function Home() {
-  const html = `export default function Home() {
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -470,9 +469,6 @@ export default function Home() {
 </script>
 </body>
 </html>
-`;
-  return <div dangerouslySetInnerHTML={{ __html: html }} />;
-}
 `;
   return <div dangerouslySetInnerHTML={{ __html: html }} />;
 }
