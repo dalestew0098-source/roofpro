@@ -200,50 +200,6 @@ export default function Home() {
     .cta-section p { color: rgba(255,255,255,0.75); font-size: 17px; margin: 12px 0 32px; line-height: 1.6; }
     .btn-white { background: #fff; color: var(--accent); font-family: var(--display); font-weight: 900; font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase; padding: 0 36px; height: 52px; text-decoration: none; display: inline-flex; align-items: center; border: none; cursor: pointer; }
     .cta-meta { font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,0.5); letter-spacing: 0.12em; margin-top: 18px; }
-<section style="background:#111418;border-top:1px solid #252B35;border-bottom:1px solid #252B35;padding:72px 24px;">
-  <div style="max-width:640px;margin:0 auto;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-      <div style="width:20px;height:2px;background:#E07B2A;"></div>
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#E07B2A;letter-spacing:0.22em;text-transform:uppercase;">Coming Soon</span>
-    </div>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(40px,8vw,68px);line-height:0.95;letter-spacing:-0.01em;text-transform:uppercase;color:#EEF2F8;margin-bottom:16px;">
-      RoofPro<br/><span style="color:#E07B2A;">Pro — $29/mo</span>
-    </div>
-    <p style="font-size:15px;color:#8796AA;line-height:1.65;max-width:480px;margin-bottom:28px;">
-      Unlimited documents, sync across all your devices, and send quotes directly by email. Join the waitlist and lock in the launch price before it goes up.
-    </p>
-    <form action="https://formspree.io/f/mbdbqkgp" method="POST" style="display:flex;border:1px solid #2E3545;">
-      <input type="hidden" name="product" value="RoofPro"/>
-      <input type="email" name="email" placeholder="your@email.com" required
-        style="flex:1;background:#181C22;border:none;border-right:1px solid #2E3545;color:#EEF2F8;padding:14px 16px;font-size:14px;font-family:'DM Sans',sans-serif;min-width:0;"/>
-      <button type="submit"
-        style="background:#E07B2A;border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;padding:0 24px;cursor:pointer;white-space:nowrap;">
-        JOIN WAITLIST
-      </button>
-    </form>
-    <div style="display:flex;border:1px solid #252B35;border-top:none;">
-      <div style="flex:1;background:#181C22;padding:12px 14px;border-right:1px solid #252B35;">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#E07B2A;letter-spacing:0.16em;margin-bottom:4px;">PRICE</div>
-        <div style="font-size:12px;color:#D0D8E4;">$29/mo launch price</div>
-      </div>
-      <div style="flex:1;background:#181C22;padding:12px 14px;border-right:1px solid #252B35;">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#E07B2A;letter-spacing:0.16em;margin-bottom:4px;">SYNC</div>
-        <div style="font-size:12px;color:#D0D8E4;">All your devices</div>
-      </div>
-      <div style="flex:1;background:#181C22;padding:12px 14px;border-right:1px solid #252B35;">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#E07B2A;letter-spacing:0.16em;margin-bottom:4px;">DOCS</div>
-        <div style="font-size:12px;color:#D0D8E4;">Unlimited estimates</div>
-      </div>
-      <div style="flex:1;background:#181C22;padding:12px 14px;">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#E07B2A;letter-spacing:0.16em;margin-bottom:4px;">EMAIL</div>
-        <div style="font-size:12px;color:#D0D8E4;">Send quotes direct</div>
-      </div>
-    </div>
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#5A6478;letter-spacing:0.1em;margin-top:14px;text-align:center;">
-      NO CREDIT CARD · NO COMMITMENT · CANCEL ANYTIME
-    </div>
-  </div>
-</section>
 
     /* FOOTER */
     footer { background: var(--bg); border-top: 1px solid var(--border); padding: 28px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
@@ -499,6 +455,32 @@ export default function Home() {
 </div>
 
 <!-- FOOTER -->
+<section style="background:#111418;border-top:1px solid #252B35;border-bottom:1px solid #252B35;padding:72px 24px;">
+  <div style="max-width:640px;margin:0 auto;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div style="width:20px;height:2px;background:#E07B2A;"></div>
+      <span style="font-family:sans-serif;font-size:9px;color:#E07B2A;letter-spacing:0.22em;text-transform:uppercase;">Coming Soon</span>
+    </div>
+    <div style="font-family:sans-serif;font-weight:900;font-size:clamp(40px,8vw,68px);line-height:0.95;color:#EEF2F8;margin-bottom:16px;">
+      RoofPro<br/><span style="color:#E07B2A;">Pro — $29/mo</span>
+    </div>
+    <p style="font-size:15px;color:#8796AA;line-height:1.65;max-width:480px;margin-bottom:28px;">
+      Unlimited documents, sync across all your devices, and send quotes directly by email. Join the waitlist and lock in the launch price before it goes up.
+    </p>
+    <form action="https://formspree.io/f/mbdbqkgp" method="POST" style="display:flex;border:1px solid #2E3545;">
+      <input type="hidden" name="product" value="RoofPro"/>
+      <input type="email" name="email" placeholder="your@email.com" required style="flex:1;background:#181C22;border:none;border-right:1px solid #2E3545;color:#EEF2F8;padding:14px 16px;font-size:14px;min-width:0;"/>
+      <button type="submit" style="background:#E07B2A;border:none;color:#fff;font-weight:800;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;padding:0 24px;cursor:pointer;white-space:nowrap;">JOIN WAITLIST</button>
+    </form>
+    <div style="display:flex;border:1px solid #252B35;border-top:none;">
+      <div style="flex:1;background:#181C22;padding:12px 14px;border-right:1px solid #252B35;"><div style="font-size:8px;color:#E07B2A;letter-spacing:0.16em;margin-bottom:4px;text-transform:uppercase;">PRICE</div><div style="font-size:12px;color:#D0D8E4;">$29/mo launch price</div></div>
+      <div style="flex:1;background:#181C22;padding:12px 14px;border-right:1px solid #252B35;"><div style="font-size:8px;color:#E07B2A;letter-spacing:0.16em;margin-bottom:4px;text-transform:uppercase;">SYNC</div><div style="font-size:12px;color:#D0D8E4;">All your devices</div></div>
+      <div style="flex:1;background:#181C22;padding:12px 14px;border-right:1px solid #252B35;"><div style="font-size:8px;color:#E07B2A;letter-spacing:0.16em;margin-bottom:4px;text-transform:uppercase;">DOCS</div><div style="font-size:12px;color:#D0D8E4;">Unlimited estimates</div></div>
+      <div style="flex:1;background:#181C22;padding:12px 14px;"><div style="font-size:8px;color:#E07B2A;letter-spacing:0.16em;margin-bottom:4px;text-transform:uppercase;">EMAIL</div><div style="font-size:12px;color:#D0D8E4;">Send quotes direct</div></div>
+    </div>
+    <div style="font-size:9px;color:#5A6478;letter-spacing:0.1em;margin-top:14px;text-align:center;">NO CREDIT CARD · NO COMMITMENT · CANCEL ANYTIME</div>
+  </div>
+</section>
 <footer>
   <div class="footer-brand">RoofPro</div>
   <div class="footer-meta">Free roofing estimate generator · Built for contractors</div>
