@@ -2,58 +2,59 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 
-const KEY = "roofpro:data:v1";
+const KEY = "roofpro:data:v2";
+
 const STATUSES = {
-  draft: { label: "Draft", color: "#6B7280", bg: "#F3F4F6" },
-  sent: { label: "Sent", color: "#92400E", bg: "#FEF3C7" },
-  accepted: { label: "Accepted", color: "#065F46", bg: "#D1FAE5" },
-  paid: { label: "Paid", color: "#065F46", bg: "#D1FAE5" },
-  declined: { label: "Declined", color: "#991B1B", bg: "#FEE2E2" },
+  draft:    { label: "DRAFT",    color: "#94A3B8", bg: "#1E2530" },
+  sent:     { label: "SENT",     color: "#F59E0B", bg: "#1C1A0F" },
+  accepted: { label: "ACCEPTED", color: "#22C55E", bg: "#0D1F12" },
+  paid:     { label: "PAID",     color: "#22C55E", bg: "#0D1F12" },
+  declined: { label: "DECLINED", color: "#EF4444", bg: "#1F0D0D" },
 };
 
 const PITCH_FACTORS = [
-  { label: "Flat (1/12)", value: 1.003 },
-  { label: "Low (3/12)", value: 1.031 },
-  { label: "Standard (4/12)", value: 1.054 },
-  { label: "Medium (6/12)", value: 1.118 },
-  { label: "Steep (8/12)", value: 1.202 },
-  { label: "Very Steep (10/12)", value: 1.302 },
-  { label: "Extreme (12/12)", value: 1.414 },
+  { label: "Flat  1/12",  value: 1.003 },
+  { label: "Low   3/12",  value: 1.031 },
+  { label: "Std   4/12",  value: 1.054 },
+  { label: "Med   6/12",  value: 1.118 },
+  { label: "Steep 8/12",  value: 1.202 },
+  { label: "V.Steep 10/12", value: 1.302 },
+  { label: "Extreme 12/12", value: 1.414 },
 ];
 
 const MATERIALS = [
-  { label: "3-Tab Shingles", costPer100: 90 },
+  { label: "3-Tab Shingles",       costPer100: 90  },
   { label: "Architectural Shingles", costPer100: 130 },
-  { label: "Premium Shingles", costPer100: 200 },
-  { label: "Metal Roofing", costPer100: 350 },
-  { label: "Flat Membrane (TPO)", costPer100: 280 },
-  { label: "Cedar Shake", costPer100: 420 },
+  { label: "Premium Shingles",     costPer100: 200 },
+  { label: "Metal Roofing",        costPer100: 350 },
+  { label: "TPO Membrane",         costPer100: 280 },
+  { label: "Cedar Shake",          costPer100: 420 },
 ];
 
-const ROOF_TEMPLATES = [
+const TEMPLATES = [
   { label: "Shingle Replace", items: [
-    { desc: "Architectural Shingles (material)", qty: 1, cost: 130, markup: 35, isMaterial: true },
-    { desc: "Tear-off & Disposal", qty: 1, cost: 150, markup: 0, isMaterial: false },
-    { desc: "Labour – Installation", qty: 1, cost: 280, markup: 0, isMaterial: false },
-    { desc: "Underlayment", qty: 1, cost: 45, markup: 30, isMaterial: true },
-    { desc: "Ridge Cap & Starter Strip", qty: 1, cost: 65, markup: 30, isMaterial: true },
+    { desc: "Architectural Shingles", qty: 1, cost: 130, markup: 35, isMaterial: true },
+    { desc: "Tear-off & Disposal",    qty: 1, cost: 150, markup: 0,  isMaterial: false },
+    { desc: "Installation Labour",    qty: 1, cost: 280, markup: 0,  isMaterial: false },
+    { desc: "Underlayment",           qty: 1, cost: 45,  markup: 30, isMaterial: true },
+    { desc: "Ridge Cap & Starter",    qty: 1, cost: 65,  markup: 30, isMaterial: true },
   ]},
-  { label: "Flat Roof", items: [
-    { desc: "TPO Membrane (material)", qty: 1, cost: 280, markup: 35, isMaterial: true },
-    { desc: "Tear-off & Disposal", qty: 1, cost: 120, markup: 0, isMaterial: false },
-    { desc: "Labour – Installation", qty: 1, cost: 240, markup: 0, isMaterial: false },
-    { desc: "Insulation Board", qty: 1, cost: 90, markup: 30, isMaterial: true },
+  { label: "Flat / TPO", items: [
+    { desc: "TPO Membrane",        qty: 1, cost: 280, markup: 35, isMaterial: true },
+    { desc: "Tear-off & Disposal", qty: 1, cost: 120, markup: 0,  isMaterial: false },
+    { desc: "Installation Labour", qty: 1, cost: 240, markup: 0,  isMaterial: false },
+    { desc: "Insulation Board",    qty: 1, cost: 90,  markup: 30, isMaterial: true },
   ]},
-  { label: "Repair / Patch", items: [
-    { desc: "Diagnostic & Site Visit", qty: 1, cost: 95, markup: 0, isMaterial: false },
-    { desc: "Materials", qty: 1, cost: 80, markup: 35, isMaterial: true },
-    { desc: "Labour – Repair", qty: 2, cost: 95, markup: 0, isMaterial: false },
+  { label: "Repair", items: [
+    { desc: "Site Visit & Diagnostic", qty: 1, cost: 95, markup: 0,  isMaterial: false },
+    { desc: "Materials",               qty: 1, cost: 80, markup: 35, isMaterial: true },
+    { desc: "Repair Labour",           qty: 2, cost: 95, markup: 0,  isMaterial: false },
   ]},
   { label: "Metal Roof", items: [
-    { desc: "Metal Panels (material)", qty: 1, cost: 350, markup: 35, isMaterial: true },
-    { desc: "Tear-off & Disposal", qty: 1, cost: 150, markup: 0, isMaterial: false },
-    { desc: "Labour – Installation", qty: 1, cost: 380, markup: 0, isMaterial: false },
-    { desc: "Flashing & Trim", qty: 1, cost: 120, markup: 30, isMaterial: true },
+    { desc: "Metal Panels",        qty: 1, cost: 350, markup: 35, isMaterial: true },
+    { desc: "Tear-off & Disposal", qty: 1, cost: 150, markup: 0,  isMaterial: false },
+    { desc: "Installation Labour", qty: 1, cost: 380, markup: 0,  isMaterial: false },
+    { desc: "Flashing & Trim",     qty: 1, cost: 120, markup: 30, isMaterial: true },
   ]},
 ];
 
@@ -61,18 +62,19 @@ const DEFAULT_SETTINGS = {
   bizName: "", ownerName: "", email: "", phone: "", address: "",
   taxRate: 0, taxLabel: "Tax", currency: "$",
   terms: "50% deposit required before work begins. Balance due on completion.",
-  accent: "#B45309", defaultMarkup: 35, licenseNum: "", insuranceNum: "", warranty: "5 year workmanship warranty",
+  defaultMarkup: 35, licenseNum: "", insuranceNum: "",
+  warranty: "5-year workmanship warranty",
 };
 
 const blankDoc = (type, counters, settings) => ({
   id: Date.now().toString(), type,
-  number: (type === "quote" ? "RQ-" : "RI-") + String((counters[type] || 0) + 1).padStart(4, "0"),
+  number: (type === "quote" ? "EST-" : "INV-") + String((counters[type] || 0) + 1).padStart(4, "0"),
   clientName: "", clientEmail: "", clientAddress: "", jobAddress: "",
   date: new Date().toISOString().slice(0, 10),
   sqft: "", pitchFactor: "1.054",
   items: [{ id: "i" + Date.now(), desc: "", qty: 1, cost: "", markup: settings.defaultMarkup || 35, isMaterial: false }],
   notes: "", taxRate: settings.taxRate, status: "draft",
-  warranty: settings.warranty || "5 year workmanship warranty",
+  warranty: settings.warranty || "5-year workmanship warranty",
 });
 
 const itemRate = (it) => {
@@ -81,22 +83,40 @@ const itemRate = (it) => {
   return Number(it.rate ?? it.cost ?? 0);
 };
 
-const calcSqs = (sqft, pitchFactor) => {
-  if (!sqft) return null;
-  return ((Number(sqft) * Number(pitchFactor || 1)) / 100).toFixed(1);
+const calcSqs = (sqft, pf) =>
+  sqft ? ((Number(sqft) * Number(pf || 1)) / 100).toFixed(1) : null;
+
+// ── Colour tokens ──────────────────────────────────────────────
+const C = {
+  bg:      "#111418",
+  surface: "#181C22",
+  border:  "#252B35",
+  border2: "#2E3545",
+  muted:   "#5A6478",
+  soft:    "#8796AA",
+  text:    "#D0D8E4",
+  bright:  "#EEF2F8",
+  accent:  "#E07B2A",   // construction orange
+  accentDim: "#3A2010",
+  green:   "#22C55E",
+  greenDim: "#0D1F12",
+  red:     "#EF4444",
+  mono:    "'IBM Plex Mono', 'Courier New', monospace",
+  sans:    "'DM Sans', system-ui, sans-serif",
+  display: "'Barlow Condensed', sans-serif",
 };
 
 export default function RoofPro() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [docs, setDocs] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [docs, setDocs]         = useState([]);
+  const [clients, setClients]   = useState([]);
   const [counters, setCounters] = useState({ quote: 0, invoice: 0 });
-  const [loaded, setLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [view, setView] = useState("list");
-  const [editing, setEditing] = useState(null);
+  const [loaded, setLoaded]     = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [view, setView]         = useState("list");
+  const [editing, setEditing]   = useState(null);
   const [markupMode, setMarkupMode] = useState(false);
-  const [showCalc, setShowCalc] = useState(false);
+  const [calcOpen, setCalcOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -117,13 +137,12 @@ export default function RoofPro() {
     setSaving(true);
     try { window.localStorage?.setItem(KEY, JSON.stringify({ settings: s, docs: d, counters: c, clients: cl })); }
     catch (e) { console.error(e); }
-    finally { setTimeout(() => setSaving(false), 400); }
+    finally { setTimeout(() => setSaving(false), 500); }
   }, []);
 
   useEffect(() => { if (loaded) persist(settings, docs, counters, clients); },
     [settings, docs, counters, clients, loaded, persist]);
 
-  const accent = settings.accent || "#B45309";
   const cur = settings.currency || "$";
   const money = (n) => cur + (Number(n) || 0).toFixed(2);
 
@@ -143,19 +162,19 @@ export default function RoofPro() {
     return { outstanding, won };
   }, [docs]);
 
-  const newDoc = (type) => { setEditing(blankDoc(type, counters, settings)); setView("edit"); setMarkupMode(false); };
-  const editDoc = (doc) => { setEditing(JSON.parse(JSON.stringify(doc))); setView("edit"); setMarkupMode(false); };
+  const newDoc  = (type) => { setEditing(blankDoc(type, counters, settings)); setView("edit"); setMarkupMode(false); setCalcOpen(false); };
+  const editDoc = (doc)  => { setEditing(JSON.parse(JSON.stringify(doc))); setView("edit"); setMarkupMode(false); setCalcOpen(false); };
 
   const upsertClient = (e) => {
     const name = e.clientName?.trim(); if (!name) return;
-    const record = { name, email: e.clientEmail || "", address: e.clientAddress || "" };
+    const rec = { name, email: e.clientEmail || "", address: e.clientAddress || "" };
     const idx = clients.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
-    if (idx === -1) setClients([record, ...clients]);
-    else setClients(clients.map((c, i) => i === idx ? record : c));
+    if (idx === -1) setClients([rec, ...clients]);
+    else setClients(clients.map((c, i) => i === idx ? rec : c));
   };
 
   const saveDoc = () => {
-    if (!editing.clientName?.trim()) { alert("Add a client name first."); return; }
+    if (!editing.clientName?.trim()) { alert("Client name required."); return; }
     const exists = docs.some(d => d.id === editing.id);
     if (exists) { setDocs(docs.map(d => d.id === editing.id ? editing : d)); }
     else { setDocs([editing, ...docs]); setCounters({ ...counters, [editing.type]: (counters[editing.type] || 0) + 1 }); }
@@ -163,517 +182,618 @@ export default function RoofPro() {
   };
 
   const duplicateDoc = (doc) => {
-    const prefix = doc.type === "quote" ? "RQ-" : "RI-";
-    const copy = {
-      ...JSON.parse(JSON.stringify(doc)), id: Date.now().toString(),
-      number: prefix + String((counters[doc.type] || 0) + 1).padStart(4, "0"),
+    const pfx = doc.type === "quote" ? "EST-" : "INV-";
+    const copy = { ...JSON.parse(JSON.stringify(doc)), id: Date.now().toString(),
+      number: pfx + String((counters[doc.type] || 0) + 1).padStart(4, "0"),
       date: new Date().toISOString().slice(0, 10), status: "draft",
       items: doc.items?.map(it => ({ ...it, id: "i" + Date.now() + Math.random() })),
     };
     setEditing(copy); setView("edit");
   };
 
-  const applyClient = (c) => setEditing(e => ({ ...e, clientName: c.name, clientEmail: c.email, clientAddress: c.address }));
-  const applyTemplate = (tpl) => {
-    const items = tpl.items.map(it => ({ id: "i" + Date.now() + Math.random(), desc: it.desc, qty: it.qty, cost: it.cost, markup: it.markup, isMaterial: it.isMaterial }));
-    setEditing(e => ({ ...e, items })); setMarkupMode(true);
-  };
-  const deleteDoc = (id) => { if (!window.confirm("Delete?")) return; setDocs(docs.filter(d => d.id !== id)); setView("list"); };
-  const updItem = (i, field, val) => setEditing({ ...editing, items: editing.items.map((it, idx) => idx === i ? { ...it, [field]: val } : it) });
-  const addItem = () => setEditing({ ...editing, items: [...editing.items, { id: "i" + Date.now(), desc: "", qty: 1, cost: "", markup: settings.defaultMarkup || 35, isMaterial: false }] });
-  const rmItem = (i) => setEditing({ ...editing, items: editing.items.filter((_, idx) => idx !== i) });
+  const applyClient   = (c) => setEditing(e => ({ ...e, clientName: c.name, clientEmail: c.email, clientAddress: c.address }));
+  const applyTemplate = (tpl) => { setEditing(e => ({ ...e, items: tpl.items.map(it => ({ ...it, id: "i" + Date.now() + Math.random() })) })); setMarkupMode(true); };
+  const deleteDoc     = (id) => { if (!window.confirm("Delete document?")) return; setDocs(docs.filter(d => d.id !== id)); setView("list"); };
+  const updItem       = (i, f, v) => setEditing({ ...editing, items: editing.items.map((it, idx) => idx === i ? { ...it, [f]: v } : it) });
+  const addItem       = () => setEditing({ ...editing, items: [...editing.items, { id: "i" + Date.now(), desc: "", qty: 1, cost: "", markup: settings.defaultMarkup || 35, isMaterial: false }] });
+  const rmItem        = (i) => setEditing({ ...editing, items: editing.items.filter((_, idx) => idx !== i) });
 
-  if (!loaded) return <div style={{ ...wrap, display: "flex", alignItems: "center", justifyContent: "center" }}>Loading…</div>;
+  if (!loaded) return (
+    <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: C.mono, color: C.muted, fontSize: 13, letterSpacing: "0.1em" }}>
+      LOADING...
+    </div>
+  );
 
   return (
-    <div style={wrap}>
+    <div style={{ fontFamily: C.sans, background: C.bg, minHeight: "100vh", color: C.text, maxWidth: 560, margin: "0 auto" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         input,textarea,select,button { font-family: inherit; }
-        input:focus,textarea:focus,select:focus { outline: 2px solid ${accent}40; border-color: ${accent}; }
-        .row:hover { background: #FFFFFA; }
+        input:focus,textarea:focus,select:focus { outline: none; border-color: ${C.accent} !important; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: ${C.surface}; }
+        ::-webkit-scrollbar-thumb { background: ${C.border2}; }
         @media print {
           .no-print { display: none !important; }
-          .sheet { box-shadow: none !important; border: none !important; margin: 0 !important; max-width: 100% !important; }
+          .sheet { box-shadow: none !important; }
           body { background: #fff !important; }
         }
       `}</style>
 
+      {/* ── TOP BAR ── */}
       {view !== "preview" && (
-        <div className="no-print" style={topbar}>
+        <div className="no-print" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 18px", height: 52, background: C.surface, borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, zIndex: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ ...logoDot, background: accent }}>🏠</div>
+            <div style={{ width: 28, height: 28, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 10L7 2L13 10H1Z" fill="white"/></svg>
+            </div>
             <div>
-              <div style={{ fontFamily: brand, fontSize: 18, lineHeight: 1, color: "#1C1917" }}>{settings.bizName || "RoofPro"}</div>
-              <div style={{ fontSize: 11, color: "#A8A29E", marginTop: 1 }}>{saving ? "saving…" : "saved ✓"}</div>
+              <div style={{ fontFamily: C.display, fontWeight: 800, fontSize: 16, letterSpacing: "0.08em", color: C.bright, textTransform: "uppercase", lineHeight: 1 }}>
+                {settings.bizName || "ROOFPRO"}
+              </div>
+              <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, letterSpacing: "0.1em", marginTop: 1 }}>
+                {saving ? "SAVING..." : "SAVED"}
+              </div>
             </div>
           </div>
-          <button onClick={() => setView("settings")} style={iconBtn}>⚙</button>
-        </div>
-      )}
-
-      {view === "settings" && (
-        <div style={pad}>
-          <h2 style={pageTitle}>Business details</h2>
-          <p style={subtle}>Appears on every estimate and invoice.</p>
-          {[
-            ["bizName", "Company name", "e.g. Summit Roofing Co."],
-            ["ownerName", "Your name", "e.g. Mike Johnson"],
-            ["email", "Email", "you@roofing.com"],
-            ["phone", "Phone", "(555) 123-4567"],
-            ["address", "Address", "123 Main St, City, State"],
-            ["licenseNum", "License number (optional)", "ROC-123456"],
-            ["insuranceNum", "Insurance / policy # (optional)", "POL-789012"],
-          ].map(([k, label, ph]) => (
-            <Field key={k} label={label}>
-              <input value={settings[k] || ""} placeholder={ph} onChange={e => setSettings({ ...settings, [k]: e.target.value })} style={input} />
-            </Field>
-          ))}
-          <div style={{ display: "flex", gap: 12 }}>
-            <Field label="Tax label" style={{ flex: 2 }}>
-              <input value={settings.taxLabel} placeholder="Tax / VAT" onChange={e => setSettings({ ...settings, taxLabel: e.target.value })} style={input} />
-            </Field>
-            <Field label="Tax %" style={{ flex: 1 }}>
-              <input value={settings.taxRate} inputMode="decimal" onChange={e => setSettings({ ...settings, taxRate: e.target.value.replace(/[^0-9.]/g, "") })} style={input} />
-            </Field>
-          </div>
-          <Field label="Default markup %">
-            <input value={settings.defaultMarkup} inputMode="decimal" onChange={e => setSettings({ ...settings, defaultMarkup: e.target.value.replace(/[^0-9.]/g, "") })} style={input} placeholder="35" />
-          </Field>
-          <Field label="Default warranty">
-            <input value={settings.warranty || ""} onChange={e => setSettings({ ...settings, warranty: e.target.value })} style={input} placeholder="e.g. 5 year workmanship warranty" />
-          </Field>
-          <Field label="Default payment terms">
-            <textarea value={settings.terms} rows={2} onChange={e => setSettings({ ...settings, terms: e.target.value })} style={{ ...input, resize: "vertical" }} />
-          </Field>
-          <Field label="Accent color">
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {["#B45309", "#1C4ED8", "#065F46", "#7C2D12", "#1E40AF", "#4C1D95", "#881337"].map(c => (
-                <button key={c} onClick={() => setSettings({ ...settings, accent: c })}
-                  style={{ width: 32, height: 32, borderRadius: 8, background: c, border: settings.accent === c ? "3px solid #111" : "3px solid transparent", cursor: "pointer" }} />
-              ))}
-            </div>
-          </Field>
-          <button onClick={() => setView("list")} style={{ ...primaryBtn, background: accent, marginTop: 8 }}>
-            {settings.bizName ? "Done" : "Save & continue"}
+          <button onClick={() => setView("settings")} style={{ background: "none", border: `1px solid ${C.border2}`, color: C.soft, width: 34, height: 34, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="7" cy="7" r="2"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.93 2.93l1.41 1.41M9.66 9.66l1.41 1.41M2.93 11.07l1.41-1.41M9.66 4.34l1.41-1.41"/></svg>
           </button>
         </div>
       )}
 
+      {/* ── SETTINGS ── */}
+      {view === "settings" && (
+        <div style={{ padding: 18 }}>
+          <SectionHead label="BUSINESS DETAILS" />
+          <p style={{ fontSize: 12, color: C.muted, marginBottom: 20 }}>Printed on every estimate and invoice.</p>
+          {[
+            ["bizName",      "COMPANY NAME",         "Summit Roofing Co."],
+            ["ownerName",    "OWNER / CONTACT",       "Mike Johnson"],
+            ["email",        "EMAIL",                 "you@roofing.com"],
+            ["phone",        "PHONE",                 "(555) 123-4567"],
+            ["address",      "BUSINESS ADDRESS",      "123 Main St, City, State"],
+            ["licenseNum",   "LICENSE NUMBER",         "ROC-123456"],
+            ["insuranceNum", "INSURANCE POLICY #",    "POL-789012"],
+          ].map(([k, label, ph]) => (
+            <FField key={k} label={label}>
+              <FInput value={settings[k] || ""} placeholder={ph} onChange={v => setSettings({ ...settings, [k]: v })} />
+            </FField>
+          ))}
+          <div style={{ display: "flex", gap: 10 }}>
+            <FField label="TAX LABEL" style={{ flex: 2 }}>
+              <FInput value={settings.taxLabel} placeholder="Tax" onChange={v => setSettings({ ...settings, taxLabel: v })} />
+            </FField>
+            <FField label="TAX %" style={{ flex: 1 }}>
+              <FInput value={settings.taxRate} placeholder="0" numeric onChange={v => setSettings({ ...settings, taxRate: v })} />
+            </FField>
+          </div>
+          <FField label="DEFAULT MARKUP %">
+            <FInput value={settings.defaultMarkup} placeholder="35" numeric onChange={v => setSettings({ ...settings, defaultMarkup: v })} />
+          </FField>
+          <FField label="DEFAULT WARRANTY">
+            <FInput value={settings.warranty || ""} placeholder="5-year workmanship warranty" onChange={v => setSettings({ ...settings, warranty: v })} />
+          </FField>
+          <FField label="PAYMENT TERMS">
+            <textarea value={settings.terms} rows={2}
+              onChange={e => setSettings({ ...settings, terms: e.target.value })}
+              style={{ ...inputStyle, resize: "vertical", height: 72 }} />
+          </FField>
+          <AccentBtn onClick={() => setView("list")} style={{ marginTop: 8 }}>
+            {settings.bizName ? "SAVE & CLOSE" : "SAVE & CONTINUE"}
+          </AccentBtn>
+        </div>
+      )}
+
+      {/* ── LIST ── */}
       {view === "list" && (
-        <div style={pad}>
-          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-            <Stat label="Outstanding" value={money(stats.outstanding)} hint="quotes sent" accent="#92400E" />
-            <Stat label="Won" value={money(stats.won)} hint="accepted / paid" accent="#065F46" />
+        <div style={{ padding: 18 }}>
+          {/* Stats */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, marginBottom: 18, border: `1px solid ${C.border}` }}>
+            {[
+              { label: "OUTSTANDING", value: money(stats.outstanding), sub: "AWAITING PAYMENT" },
+              { label: "WON",         value: money(stats.won),         sub: "ACCEPTED / PAID"  },
+            ].map(s => (
+              <div key={s.label} style={{ background: C.surface, padding: "14px 16px" }}>
+                <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, letterSpacing: "0.15em", marginBottom: 6 }}>{s.label}</div>
+                <div style={{ fontFamily: C.display, fontWeight: 800, fontSize: 22, color: C.bright, letterSpacing: "0.02em", lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, letterSpacing: "0.1em", marginTop: 4 }}>{s.sub}</div>
+              </div>
+            ))}
           </div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-            <button onClick={() => newDoc("quote")} style={{ ...primaryBtn, background: accent, flex: 1, fontSize: 14 }}>+ New estimate</button>
-            <button onClick={() => newDoc("invoice")} style={{ ...outlineBtn, borderColor: accent, color: accent, flex: 1, fontSize: 14 }}>+ Invoice</button>
+
+          {/* Actions */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 }}>
+            <AccentBtn onClick={() => newDoc("quote")}>+ ESTIMATE</AccentBtn>
+            <GhostBtn onClick={() => newDoc("invoice")}>+ INVOICE</GhostBtn>
           </div>
+
+          {/* Doc list */}
           {docs.length === 0 ? (
-            <div style={empty}><div style={{ fontSize: 40, marginBottom: 8 }}>🏠</div>No estimates yet.<br />Create your first one above.</div>
+            <div style={{ border: `1px dashed ${C.border}`, padding: "40px 20px", textAlign: "center" }}>
+              <div style={{ fontFamily: C.mono, fontSize: 11, color: C.muted, letterSpacing: "0.1em" }}>NO DOCUMENTS YET</div>
+              <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>Create your first estimate above.</div>
+            </div>
           ) : (
-            <div>{docs.map(d => {
-              const { total } = totalsOf(d);
-              const st = STATUSES[d.status] || STATUSES.draft;
-              return (
-                <div key={d.id} className="row" style={listRow} onClick={() => editDoc(d)}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontFamily: "monospace", fontSize: 11, color: "#A8A29E" }}>{d.number}</span>
-                      <span style={{ ...badge, color: st.color, background: st.bg }}>{st.label}</span>
-                      {d.sqft && <span style={{ ...badge, color: "#1C4ED8", background: "#EFF6FF" }}>{d.sqft} sqft</span>}
+            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {docs.map(d => {
+                const { total } = totalsOf(d);
+                const st = STATUSES[d.status] || STATUSES.draft;
+                return (
+                  <div key={d.id} onClick={() => editDoc(d)}
+                    style={{ background: C.surface, border: `1px solid ${C.border}`, padding: "13px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontFamily: C.mono, fontSize: 10, color: C.muted, letterSpacing: "0.08em" }}>{d.number}</span>
+                        <span style={{ fontFamily: C.mono, fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", color: st.color, background: st.bg, padding: "2px 6px" }}>{st.label}</span>
+                      </div>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: C.bright, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {d.clientName || "Untitled"}
+                      </div>
+                      <div style={{ fontFamily: C.mono, fontSize: 10, color: C.muted, marginTop: 3, letterSpacing: "0.05em" }}>
+                        {d.type === "invoice" ? "INVOICE" : "ESTIMATE"} · {d.date}
+                        {d.sqft && ` · ${d.sqft} SQFT`}
+                      </div>
                     </div>
-                    <div style={{ fontWeight: 600, fontSize: 15, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.clientName || "Untitled"}</div>
-                    <div style={{ fontSize: 12, color: "#A8A29E" }}>{d.type === "invoice" ? "Invoice" : "Estimate"} · {d.date}</div>
+                    <div style={{ fontFamily: C.display, fontWeight: 800, fontSize: 18, color: C.bright, letterSpacing: "0.02em", flexShrink: 0 }}>
+                      {money(total)}
+                    </div>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: 17 }}>{money(total)}</div>
-                </div>
-              );
-            })}</div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
 
+      {/* ── EDITOR ── */}
       {view === "edit" && editing && (
-        <div style={pad}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <button onClick={() => { setView("list"); setEditing(null); }} style={backBtn}>← Back</button>
-            <span style={{ fontFamily: "monospace", fontSize: 12, color: "#A8A29E" }}>{editing.number}</span>
+        <div style={{ padding: 18 }}>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <button onClick={() => { setView("list"); setEditing(null); }}
+              style={{ background: "none", border: "none", color: C.soft, cursor: "pointer", fontFamily: C.mono, fontSize: 11, letterSpacing: "0.1em", padding: 0 }}>
+              BACK
+            </button>
+            <span style={{ fontFamily: C.mono, fontSize: 11, color: C.muted, letterSpacing: "0.1em" }}>{editing.number}</span>
           </div>
-          <h2 style={pageTitle}>{editing.type === "invoice" ? "Invoice" : "Estimate"} for…</h2>
 
+          <SectionHead label={editing.type === "invoice" ? "INVOICE" : "ESTIMATE"} />
+
+          {/* Saved clients */}
           {clients.length > 0 && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ ...sectionLabel, marginBottom: 6 }}>Saved clients</div>
+            <div style={{ marginBottom: 16 }}>
+              <Label>SAVED CLIENTS</Label>
               <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
                 {clients.map(c => (
                   <button key={c.name} onClick={() => applyClient(c)}
-                    style={{ ...chip, whiteSpace: "nowrap", flexShrink: 0, ...(editing.clientName?.toLowerCase() === c.name.toLowerCase() ? { background: accent + "15", color: accent, borderColor: accent } : {}) }}>
-                    {c.name}
+                    style={{ background: editing.clientName?.toLowerCase() === c.name.toLowerCase() ? C.accentDim : C.surface,
+                      border: `1px solid ${editing.clientName?.toLowerCase() === c.name.toLowerCase() ? C.accent : C.border2}`,
+                      color: editing.clientName?.toLowerCase() === c.name.toLowerCase() ? C.accent : C.soft,
+                      fontFamily: C.mono, fontSize: 10, letterSpacing: "0.08em", padding: "6px 10px",
+                      cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+                    {c.name.toUpperCase()}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          <Field label="Client name">
-            <input value={editing.clientName} placeholder="e.g. Robert Williams" onChange={e => setEditing({ ...editing, clientName: e.target.value })} style={input} />
-          </Field>
-          <div style={{ display: "flex", gap: 12 }}>
-            <Field label="Client email" style={{ flex: 1 }}>
-              <input value={editing.clientEmail} onChange={e => setEditing({ ...editing, clientEmail: e.target.value })} style={input} />
-            </Field>
-            <Field label="Date" style={{ flex: 1 }}>
-              <input type="date" value={editing.date} onChange={e => setEditing({ ...editing, date: e.target.value })} style={input} />
-            </Field>
+          {/* Client fields */}
+          <FField label="CLIENT NAME">
+            <FInput value={editing.clientName} placeholder="Robert Williams" onChange={v => setEditing({ ...editing, clientName: v })} />
+          </FField>
+          <div style={{ display: "flex", gap: 10 }}>
+            <FField label="EMAIL" style={{ flex: 1 }}>
+              <FInput value={editing.clientEmail} placeholder="client@email.com" onChange={v => setEditing({ ...editing, clientEmail: v })} />
+            </FField>
+            <FField label="DATE" style={{ flex: 1 }}>
+              <input type="date" value={editing.date} onChange={e => setEditing({ ...editing, date: e.target.value })} style={inputStyle} />
+            </FField>
           </div>
-          <Field label="Job address">
-            <input value={editing.jobAddress} placeholder="Property being roofed" onChange={e => setEditing({ ...editing, jobAddress: e.target.value })} style={input} />
-          </Field>
+          <FField label="JOB ADDRESS">
+            <FInput value={editing.jobAddress} placeholder="Property address" onChange={v => setEditing({ ...editing, jobAddress: v })} />
+          </FField>
 
-          <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
-            <button onClick={() => setShowCalc(s => !s)} style={{ background: "none", border: "none", width: "100%", textAlign: "left", cursor: "pointer", padding: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ ...sectionLabel, marginBottom: 0, color: "#92400E" }}>🏠 Roof calculator</span>
-                <span style={{ color: "#92400E", fontSize: 18 }}>{showCalc ? "−" : "+"}</span>
-              </div>
+          {/* Roof Calculator */}
+          <div style={{ border: `1px solid ${C.border}`, marginBottom: 18 }}>
+            <button onClick={() => setCalcOpen(o => !o)}
+              style={{ width: "100%", background: C.surface, border: "none", cursor: "pointer", padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontFamily: C.mono, fontSize: 10, color: C.accent, letterSpacing: "0.15em" }}>ROOF CALCULATOR</span>
+              <span style={{ fontFamily: C.mono, fontSize: 14, color: C.muted }}>{calcOpen ? "−" : "+"}</span>
             </button>
-            {showCalc && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-                  <Field label="Footprint sqft" style={{ flex: 1 }}>
-                    <input value={editing.sqft} inputMode="decimal" placeholder="e.g. 2000"
-                      onChange={e => setEditing({ ...editing, sqft: e.target.value.replace(/[^0-9.]/g, "") })} style={input} />
-                  </Field>
-                  <Field label="Roof pitch" style={{ flex: 1 }}>
-                    <select value={editing.pitchFactor} onChange={e => setEditing({ ...editing, pitchFactor: e.target.value })} style={{ ...input, cursor: "pointer" }}>
+            {calcOpen && (
+              <div style={{ padding: "14px", borderTop: `1px solid ${C.border}`, background: C.bg }}>
+                <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                  <FField label="FOOTPRINT SQFT" style={{ flex: 1 }}>
+                    <FInput value={editing.sqft} placeholder="2000" numeric onChange={v => setEditing({ ...editing, sqft: v })} />
+                  </FField>
+                  <FField label="PITCH" style={{ flex: 1 }}>
+                    <select value={editing.pitchFactor} onChange={e => setEditing({ ...editing, pitchFactor: e.target.value })} style={{ ...inputStyle, fontFamily: C.mono, fontSize: 11 }}>
                       {PITCH_FACTORS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                     </select>
-                  </Field>
+                  </FField>
                 </div>
-                {editing.sqft && (
-                  <div style={{ background: "#fff", borderRadius: 8, padding: "10px 12px", fontSize: 13 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ color: "#78716C" }}>Actual roof area</span>
-                      <strong>{Math.round(Number(editing.sqft) * Number(editing.pitchFactor || 1))} sqft</strong>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                      <span style={{ color: "#78716C" }}>Squares needed</span>
-                      <strong style={{ color: accent }}>{calcSqs(editing.sqft, editing.pitchFactor)} squares</strong>
-                    </div>
-                    <div style={{ ...sectionLabel, marginBottom: 6 }}>Material cost estimates:</div>
-                    {MATERIALS.map(m => {
-                      const sqs = Number(calcSqs(editing.sqft, editing.pitchFactor));
-                      const total = (sqs * m.costPer100 * (1 + (Number(settings.defaultMarkup) || 35) / 100)).toFixed(0);
-                      return (
-                        <div key={m.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "3px 0", borderBottom: "1px solid #F5F5F4" }}>
-                          <span style={{ color: "#78716C" }}>{m.label}</span>
-                          <span style={{ fontWeight: 600 }}>${total}</span>
+                {editing.sqft && (() => {
+                  const actualSqft = Math.round(Number(editing.sqft) * Number(editing.pitchFactor || 1));
+                  const sqs = Number(calcSqs(editing.sqft, editing.pitchFactor));
+                  return (
+                    <div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, marginBottom: 14 }}>
+                        {[
+                          ["ACTUAL ROOF AREA", `${actualSqft} SQFT`],
+                          ["SQUARES NEEDED",   `${sqs} SQ`],
+                        ].map(([k, v]) => (
+                          <div key={k} style={{ background: C.surface, padding: "10px 12px" }}>
+                            <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, letterSpacing: "0.1em", marginBottom: 4 }}>{k}</div>
+                            <div style={{ fontFamily: C.display, fontWeight: 800, fontSize: 18, color: C.accent, letterSpacing: "0.04em" }}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, letterSpacing: "0.12em", marginBottom: 8 }}>MATERIAL COST ESTIMATES (WITH {settings.defaultMarkup || 35}% MARKUP)</div>
+                      {MATERIALS.map(m => (
+                        <div key={m.label} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: `1px solid ${C.border}` }}>
+                          <span style={{ fontFamily: C.mono, fontSize: 11, color: C.soft }}>{m.label}</span>
+                          <span style={{ fontFamily: C.mono, fontSize: 11, color: C.bright, fontWeight: 500 }}>
+                            ${(sqs * m.costPer100 * (1 + (Number(settings.defaultMarkup) || 35) / 100)).toFixed(0)}
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
 
-          <div style={{ ...sectionLabel, marginTop: 4 }}>Quick-fill templates</div>
-          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6, marginBottom: 14 }}>
-            {ROOF_TEMPLATES.map(tpl => (
-              <button key={tpl.label} onClick={() => applyTemplate(tpl)}
-                style={{ ...chip, flexShrink: 0, whiteSpace: "nowrap", background: "#FFFBEB", borderColor: accent, color: accent }}>
-                {tpl.label}
-              </button>
-            ))}
+          {/* Templates */}
+          <div style={{ marginBottom: 16 }}>
+            <Label>QUICK-FILL TEMPLATES</Label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              {TEMPLATES.map(tpl => (
+                <button key={tpl.label} onClick={() => applyTemplate(tpl)}
+                  style={{ background: C.surface, border: `1px solid ${C.border2}`, color: C.soft, fontFamily: C.mono, fontSize: 10, letterSpacing: "0.08em", padding: "9px 10px", cursor: "pointer", textAlign: "left" }}>
+                  {tpl.label.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <div style={sectionLabel}>Line items</div>
+          {/* Line items */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <Label style={{ marginBottom: 0 }}>LINE ITEMS</Label>
             <button onClick={() => setMarkupMode(m => !m)}
-              style={{ ...chip, fontSize: 11, padding: "4px 10px", background: markupMode ? accent + "15" : "#fff", color: markupMode ? accent : "#6B7280", borderColor: markupMode ? accent : "#E7E5E4" }}>
-              {markupMode ? "✓ Markup ON" : "Markup mode"}
+              style={{ background: markupMode ? C.accentDim : "none", border: `1px solid ${markupMode ? C.accent : C.border2}`, color: markupMode ? C.accent : C.muted, fontFamily: C.mono, fontSize: 9, letterSpacing: "0.1em", padding: "5px 10px", cursor: "pointer" }}>
+              {markupMode ? "MARKUP: ON" : "MARKUP: OFF"}
             </button>
           </div>
 
-          {markupMode && (
-            <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 12px", marginBottom: 12, fontSize: 12, color: "#92400E" }}>
-              <strong>Markup mode:</strong> Enter cost price for materials + markup %. Labour uses rate directly.
-            </div>
-          )}
-
           {editing.items.map((it, i) => (
-            <div key={it.id} style={itemCard}>
-              <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
-                <input value={it.desc} placeholder="Description" onChange={e => updItem(i, "desc", e.target.value)} style={{ ...input, flex: 1 }} />
+            <div key={it.id} style={{ border: `1px solid ${C.border}`, marginBottom: 8, background: C.surface }}>
+              <div style={{ padding: "10px 12px", borderBottom: `1px solid ${C.border}`, display: "flex", gap: 8, alignItems: "center" }}>
+                <input value={it.desc} placeholder="Description of work or materials"
+                  onChange={e => updItem(i, "desc", e.target.value)}
+                  style={{ ...inputStyle, flex: 1, background: "transparent", border: "none", padding: "0", fontSize: 13 }} />
                 {markupMode && (
                   <button onClick={() => updItem(i, "isMaterial", !it.isMaterial)}
-                    style={{ ...chip, fontSize: 11, padding: "6px 10px", flexShrink: 0, background: it.isMaterial ? "#DBEAFE" : "#F5F5F4", color: it.isMaterial ? "#1D4ED8" : "#6B7280", borderColor: it.isMaterial ? "#93C5FD" : "#E7E5E4" }}>
-                    {it.isMaterial ? "Material" : "Labour"}
+                    style={{ background: it.isMaterial ? "#0D1829" : "none", border: `1px solid ${it.isMaterial ? "#3B82F6" : C.border2}`, color: it.isMaterial ? "#60A5FA" : C.muted, fontFamily: C.mono, fontSize: 9, letterSpacing: "0.08em", padding: "4px 8px", cursor: "pointer", flexShrink: 0 }}>
+                    {it.isMaterial ? "MATL" : "LBOR"}
                   </button>
                 )}
               </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                <input value={it.qty} inputMode="decimal" placeholder="Qty"
-                  onChange={e => updItem(i, "qty", e.target.value.replace(/[^0-9.]/g, ""))}
-                  style={{ ...input, width: 52, textAlign: "center", padding: "8px 6px" }} />
-                <span style={{ color: "#A8A29E" }}>×</span>
+              <div style={{ padding: "10px 12px", display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                  <span style={{ fontFamily: C.mono, fontSize: 10, color: C.muted }}>QTY</span>
+                  <input value={it.qty} inputMode="decimal" onChange={e => updItem(i, "qty", e.target.value.replace(/[^0-9.]/g, ""))}
+                    style={{ ...inputStyle, width: 50, textAlign: "center", padding: "6px 4px", fontFamily: C.mono, fontSize: 12 }} />
+                </div>
+                <span style={{ color: C.muted, fontSize: 12, flexShrink: 0 }}>x</span>
                 {markupMode && it.isMaterial ? (
                   <>
-                    <div style={{ position: "relative", flex: 1, minWidth: 70 }}>
-                      <span style={curPrefix}>{cur}</span>
-                      <input value={it.cost} inputMode="decimal" placeholder="Cost"
-                        onChange={e => updItem(i, "cost", e.target.value.replace(/[^0-9.]/g, ""))}
-                        style={{ ...input, paddingLeft: 22, padding: "8px 8px 8px 22px" }} />
+                    <div style={{ flex: 1, minWidth: 60 }}>
+                      <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, marginBottom: 3 }}>COST</div>
+                      <div style={{ position: "relative" }}>
+                        <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", fontFamily: C.mono, fontSize: 11, color: C.muted }}>{cur}</span>
+                        <input value={it.cost} inputMode="decimal" placeholder="0.00"
+                          onChange={e => updItem(i, "cost", e.target.value.replace(/[^0-9.]/g, ""))}
+                          style={{ ...inputStyle, paddingLeft: 22, fontFamily: C.mono, fontSize: 12 }} />
+                      </div>
                     </div>
-                    <span style={{ color: "#A8A29E", fontSize: 12 }}>+</span>
-                    <div style={{ position: "relative", width: 64 }}>
-                      <input value={it.markup ?? settings.defaultMarkup} inputMode="decimal" placeholder="%"
+                    <div style={{ flexShrink: 0 }}>
+                      <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, marginBottom: 3 }}>MARK%</div>
+                      <input value={it.markup ?? settings.defaultMarkup} inputMode="decimal"
                         onChange={e => updItem(i, "markup", e.target.value.replace(/[^0-9.]/g, ""))}
-                        style={{ ...input, paddingRight: 20, padding: "8px 20px 8px 8px", textAlign: "right" }} />
-                      <span style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", color: "#A8A29E", fontSize: 12 }}>%</span>
+                        style={{ ...inputStyle, width: 56, textAlign: "center", fontFamily: C.mono, fontSize: 12 }} />
                     </div>
-                    <span style={{ fontSize: 12, color: "#065F46", fontWeight: 700, minWidth: 60, textAlign: "right" }}>
-                      = {money((Number(it.cost) || 0) * (1 + (Number(it.markup ?? settings.defaultMarkup) || 0) / 100) * (Number(it.qty) || 0))}
-                    </span>
+                    <div style={{ marginLeft: "auto", textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, marginBottom: 3 }}>SELL</div>
+                      <div style={{ fontFamily: C.mono, fontSize: 13, color: C.green, fontWeight: 500 }}>
+                        {money((Number(it.cost) || 0) * (1 + (Number(it.markup ?? settings.defaultMarkup) || 0) / 100) * (Number(it.qty) || 0))}
+                      </div>
+                    </div>
                   </>
                 ) : (
                   <>
-                    <div style={{ position: "relative", flex: 1 }}>
-                      <span style={curPrefix}>{cur}</span>
-                      <input value={it.cost} inputMode="decimal" placeholder="Rate"
-                        onChange={e => updItem(i, "cost", e.target.value.replace(/[^0-9.]/g, ""))}
-                        style={{ ...input, paddingLeft: 22, padding: "8px 8px 8px 22px" }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, marginBottom: 3 }}>RATE</div>
+                      <div style={{ position: "relative" }}>
+                        <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", fontFamily: C.mono, fontSize: 11, color: C.muted }}>{cur}</span>
+                        <input value={it.cost} inputMode="decimal" placeholder="0.00"
+                          onChange={e => updItem(i, "cost", e.target.value.replace(/[^0-9.]/g, ""))}
+                          style={{ ...inputStyle, paddingLeft: 22, fontFamily: C.mono, fontSize: 12 }} />
+                      </div>
                     </div>
-                    <span style={{ width: 68, textAlign: "right", fontWeight: 600, fontSize: 13 }}>
-                      {money((Number(it.qty) || 0) * itemRate(it))}
-                    </span>
+                    <div style={{ marginLeft: "auto", textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, marginBottom: 3 }}>TOTAL</div>
+                      <div style={{ fontFamily: C.mono, fontSize: 13, color: C.bright, fontWeight: 500 }}>
+                        {money((Number(it.qty) || 0) * itemRate(it))}
+                      </div>
+                    </div>
                   </>
                 )}
-                {editing.items.length > 1 && <button onClick={() => rmItem(i)} style={delBtn}>×</button>}
+                {editing.items.length > 1 && (
+                  <button onClick={() => rmItem(i)} style={{ background: "none", border: `1px solid ${C.border}`, color: C.muted, width: 28, height: 28, cursor: "pointer", flexShrink: 0, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+                )}
               </div>
             </div>
           ))}
-          <button onClick={addItem} style={{ ...outlineBtn, borderColor: "#E7E5E4", color: "#44403C", width: "100%", marginTop: 4 }}>+ Add line</button>
 
-          <div style={totalsBox}>{(() => {
+          <button onClick={addItem} style={{ width: "100%", background: "none", border: `1px dashed ${C.border2}`, color: C.muted, fontFamily: C.mono, fontSize: 10, letterSpacing: "0.12em", padding: "10px", cursor: "pointer", marginBottom: 16 }}>
+            + ADD LINE ITEM
+          </button>
+
+          {/* Totals */}
+          {(() => {
             const t = totalsOf(editing);
             const mCost = editing.items.reduce((a, it) => a + (it.isMaterial ? (Number(it.cost) || 0) * (Number(it.qty) || 0) : 0), 0);
             const mSell = editing.items.reduce((a, it) => a + (it.isMaterial ? (Number(it.qty) || 0) * itemRate(it) : 0), 0);
-            const profit = mSell - mCost;
+            const margin = mSell - mCost;
             return (
-              <>
-                <Row k="Subtotal" v={money(t.sub)} />
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#78716C", fontSize: 14 }}>
+              <div style={{ border: `1px solid ${C.border}`, background: C.surface, marginBottom: 18 }}>
+                <TRow k="SUBTOTAL" v={money(t.sub)} />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: C.mono, fontSize: 11, color: C.muted, letterSpacing: "0.08em" }}>
                     {settings.taxLabel}
                     <input value={editing.taxRate} inputMode="decimal"
                       onChange={e => setEditing({ ...editing, taxRate: e.target.value.replace(/[^0-9.]/g, "") })}
-                      style={{ ...input, width: 50, padding: "4px 6px", textAlign: "center" }} />%
+                      style={{ ...inputStyle, width: 50, padding: "4px 6px", textAlign: "center", fontFamily: C.mono, fontSize: 11 }} />%
                   </span>
-                  <span>{money(t.tax)}</span>
+                  <span style={{ fontFamily: C.mono, fontSize: 11, color: C.text }}>{money(t.tax)}</span>
                 </div>
-                <div style={{ height: 1, background: "#E7E5E4", margin: "6px 0" }} />
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 18 }}>
-                  <span>Total</span><span style={{ color: accent }}>{money(t.total)}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "14px", alignItems: "baseline" }}>
+                  <span style={{ fontFamily: C.mono, fontSize: 11, color: C.muted, letterSpacing: "0.1em" }}>TOTAL</span>
+                  <span style={{ fontFamily: C.display, fontWeight: 800, fontSize: 26, color: C.accent, letterSpacing: "0.04em" }}>{money(t.total)}</span>
                 </div>
-                {markupMode && profit > 0 && (
-                  <div style={{ marginTop: 10, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#166534" }}>
-                    💰 Materials margin: {money(profit)} ({mCost > 0 ? Math.round((profit / mCost) * 100) : 0}% on cost)
+                {markupMode && margin > 0 && (
+                  <div style={{ borderTop: `1px solid ${C.border}`, padding: "10px 14px", background: C.greenDim }}>
+                    <span style={{ fontFamily: C.mono, fontSize: 10, color: C.green, letterSpacing: "0.08em" }}>
+                      MATERIALS MARGIN: {money(margin)} ({mCost > 0 ? Math.round((margin / mCost) * 100) : 0}% ON COST)
+                    </span>
                   </div>
                 )}
-              </>
+              </div>
             );
-          })()}</div>
+          })()}
 
-          <Field label="Warranty" style={{ marginTop: 16 }}>
-            <input value={editing.warranty || ""} onChange={e => setEditing({ ...editing, warranty: e.target.value })} style={input} placeholder="e.g. 5 year workmanship warranty" />
-          </Field>
-          <Field label="Notes">
-            <textarea value={editing.notes} rows={2} placeholder="Additional notes…"
-              onChange={e => setEditing({ ...editing, notes: e.target.value })} style={{ ...input, resize: "vertical" }} />
-          </Field>
+          <FField label="WARRANTY">
+            <FInput value={editing.warranty || ""} placeholder="5-year workmanship warranty" onChange={v => setEditing({ ...editing, warranty: v })} />
+          </FField>
+          <FField label="NOTES">
+            <textarea value={editing.notes} rows={2} placeholder="Additional notes for the client…"
+              onChange={e => setEditing({ ...editing, notes: e.target.value })}
+              style={{ ...inputStyle, resize: "vertical" }} />
+          </FField>
 
-          <div style={{ ...sectionLabel, marginTop: 14 }}>Status</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
-            {(editing.type === "quote" ? ["draft", "sent", "accepted", "declined"] : ["draft", "sent", "paid"]).map(s => (
-              <button key={s} onClick={() => setEditing({ ...editing, status: s })}
-                style={{ ...chip, ...(editing.status === s ? { background: STATUSES[s].bg, color: STATUSES[s].color, borderColor: STATUSES[s].color } : {}) }}>
-                {STATUSES[s].label}
-              </button>
-            ))}
+          {/* Status */}
+          <div style={{ marginBottom: 20 }}>
+            <Label>STATUS</Label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {(editing.type === "quote" ? ["draft","sent","accepted","declined"] : ["draft","sent","paid"]).map(s => {
+                const st = STATUSES[s];
+                const active = editing.status === s;
+                return (
+                  <button key={s} onClick={() => setEditing({ ...editing, status: s })}
+                    style={{ background: active ? st.bg : "none", border: `1px solid ${active ? st.color : C.border2}`, color: active ? st.color : C.muted, fontFamily: C.mono, fontSize: 9, letterSpacing: "0.12em", padding: "7px 12px", cursor: "pointer" }}>
+                    {st.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {docs.some(d => d.id === editing.id) && (
-            <button onClick={() => duplicateDoc(editing)} style={{ ...outlineBtn, borderColor: "#E7E5E4", color: "#44403C", width: "100%", marginBottom: 10 }}>
-              ⧉ Duplicate estimate
+            <button onClick={() => duplicateDoc(editing)}
+              style={{ width: "100%", background: "none", border: `1px solid ${C.border2}`, color: C.muted, fontFamily: C.mono, fontSize: 10, letterSpacing: "0.12em", padding: "10px", cursor: "pointer", marginBottom: 10 }}>
+              DUPLICATE DOCUMENT
             </button>
           )}
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => deleteDoc(editing.id)} style={{ ...outlineBtn, borderColor: "#FCA5A5", color: "#DC2626" }}>Delete</button>
-            <button onClick={saveDoc} style={{ ...outlineBtn, borderColor: accent, color: accent, flex: 1 }}>Save</button>
-            <button onClick={() => { saveDoc(); setEditing(editing); setView("preview"); }}
-              style={{ ...primaryBtn, background: accent, flex: 1 }}>Preview / PDF</button>
+
+          <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr", gap: 8 }}>
+            <button onClick={() => deleteDoc(editing.id)}
+              style={{ background: "none", border: `1px solid #3F1515`, color: C.red, fontFamily: C.mono, fontSize: 10, letterSpacing: "0.1em", padding: "0 14px", cursor: "pointer", height: 44 }}>
+              DEL
+            </button>
+            <GhostBtn onClick={saveDoc}>SAVE</GhostBtn>
+            <AccentBtn onClick={() => { saveDoc(); setEditing(editing); setView("preview"); }}>PREVIEW</AccentBtn>
           </div>
         </div>
       )}
 
+      {/* ── PREVIEW ── */}
       {view === "preview" && editing && (
         <div>
-          <div className="no-print" style={{ ...topbar, justifyContent: "space-between" }}>
-            <button onClick={() => setView("edit")} style={backBtn}>← Edit</button>
-            <button onClick={() => window.print()} style={{ ...primaryBtn, background: accent, width: "auto", padding: "10px 18px" }}>⬇ Save as PDF</button>
+          <div className="no-print" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 18px", height: 52, background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+            <button onClick={() => setView("edit")} style={{ background: "none", border: "none", color: C.soft, cursor: "pointer", fontFamily: C.mono, fontSize: 11, letterSpacing: "0.1em", padding: 0 }}>
+              BACK
+            </button>
+            <AccentBtn onClick={() => window.print()} style={{ width: "auto", padding: "0 20px", height: 36, fontSize: 11 }}>
+              SAVE AS PDF
+            </AccentBtn>
           </div>
-          <RoofSheet doc={editing} settings={settings} accent={accent} money={money} totalsOf={totalsOf} brand={brand} itemRate={itemRate} />
-          <p className="no-print" style={{ textAlign: "center", color: "#A8A29E", fontSize: 12, padding: "8px 20px 24px" }}>In the print dialog, choose "Save as PDF".</p>
+          <PrintDoc doc={editing} settings={settings} money={money} totalsOf={totalsOf} itemRate={itemRate} />
+          <p className="no-print" style={{ textAlign: "center", fontFamily: C.mono, fontSize: 10, color: C.muted, padding: "16px 20px 28px", letterSpacing: "0.08em" }}>
+            FILE › PRINT › SAVE AS PDF
+          </p>
         </div>
       )}
     </div>
   );
 }
 
-function RoofSheet({ doc, settings, accent, money, totalsOf, brand, itemRate }) {
+/* ── Print Document ── */
+function PrintDoc({ doc, settings, money, totalsOf, itemRate }) {
   const t = totalsOf(doc);
-  const title = doc.type === "invoice" ? "INVOICE" : "ROOFING ESTIMATE";
+  const title = doc.type === "invoice" ? "INVOICE" : "ESTIMATE";
+  const cur = settings.currency || "$";
   return (
-    <div className="sheet" style={sheet}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+    <div className="sheet" style={{ background: "#fff", margin: 16, padding: "32px 28px", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#1a1a1a" }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, paddingBottom: 20, borderBottom: "2px solid #1a1a1a" }}>
         <div>
-          <div style={{ fontFamily: brand, fontSize: 24, color: "#1C1917", lineHeight: 1 }}>{settings.bizName || "Your Company"}</div>
-          <div style={{ fontSize: 12, color: "#78716C", marginTop: 6, lineHeight: 1.7 }}>
-            {settings.ownerName && <div>{settings.ownerName}</div>}
-            {settings.address && <div>{settings.address}</div>}
-            {settings.phone && <div>{settings.phone}</div>}
-            {settings.email && <div>{settings.email}</div>}
-            {settings.licenseNum && <div>License: {settings.licenseNum}</div>}
-            {settings.insuranceNum && <div>Insurance: {settings.insuranceNum}</div>}
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 24, letterSpacing: "0.06em", color: "#1a1a1a", textTransform: "uppercase" }}>
+            {settings.bizName || "Your Company"}
+          </div>
+          <div style={{ fontSize: 11, color: "#666", marginTop: 6, lineHeight: 1.8, fontFamily: "'IBM Plex Mono', monospace" }}>
+            {settings.ownerName    && <div>{settings.ownerName}</div>}
+            {settings.address      && <div>{settings.address}</div>}
+            {settings.phone        && <div>{settings.phone}</div>}
+            {settings.email        && <div>{settings.email}</div>}
+            {settings.licenseNum   && <div>LIC: {settings.licenseNum}</div>}
+            {settings.insuranceNum && <div>INS: {settings.insuranceNum}</div>}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, fontSize: 18, letterSpacing: "0.06em", color: accent, textTransform: "uppercase" }}>{title}</div>
-          <div style={{ fontFamily: "monospace", fontSize: 13, color: "#44403C", marginTop: 4 }}>{doc.number}</div>
-          <div style={{ fontSize: 12, color: "#78716C", marginTop: 2 }}>{doc.date}</div>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: "0.1em", color: "#E07B2A" }}>{title}</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#444", marginTop: 4 }}>{doc.number}</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#888", marginTop: 2 }}>{doc.date}</div>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-        <div style={{ flex: 1, background: "#FAFAF9", borderRadius: 10, padding: "14px 16px" }}>
-          <div style={noteLabel}>Prepared for</div>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{doc.clientName}</div>
-          {doc.clientEmail && <div style={{ fontSize: 12, color: "#78716C" }}>{doc.clientEmail}</div>}
-          {doc.clientAddress && <div style={{ fontSize: 12, color: "#78716C" }}>{doc.clientAddress}</div>}
+      {/* Client + Job */}
+      <div style={{ display: "grid", gridTemplateColumns: doc.jobAddress ? "1fr 1fr" : "1fr", gap: 16, marginBottom: 24 }}>
+        <div style={{ border: "1px solid #e0e0e0", padding: "12px 14px" }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.15em", color: "#999", textTransform: "uppercase", marginBottom: 6 }}>{doc.type === "quote" ? "PREPARED FOR" : "BILL TO"}</div>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>{doc.clientName}</div>
+          {doc.clientEmail   && <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>{doc.clientEmail}</div>}
+          {doc.clientAddress && <div style={{ fontSize: 11, color: "#666" }}>{doc.clientAddress}</div>}
         </div>
         {doc.jobAddress && (
-          <div style={{ flex: 1, background: "#FFFBEB", borderRadius: 10, padding: "14px 16px" }}>
-            <div style={noteLabel}>Job address</div>
-            <div style={{ fontSize: 13, fontWeight: 600 }}>{doc.jobAddress}</div>
-            {doc.sqft && <div style={{ fontSize: 12, color: "#92400E", marginTop: 4 }}>{doc.sqft} sqft · {calcSqs(doc.sqft, doc.pitchFactor)} squares</div>}
+          <div style={{ border: "1px solid #e0e0e0", padding: "12px 14px", background: "#FAFAF8" }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.15em", color: "#999", textTransform: "uppercase", marginBottom: 6 }}>JOB ADDRESS</div>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>{doc.jobAddress}</div>
+            {doc.sqft && <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#E07B2A", marginTop: 4 }}>{doc.sqft} SQFT · {calcSqs(doc.sqft, doc.pitchFactor)} SQUARES</div>}
           </div>
         )}
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
+      {/* Items table */}
+      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 20 }}>
         <thead>
-          <tr style={{ borderBottom: `2px solid ${accent}` }}>
-            <th style={th}>Description</th>
-            <th style={{ ...th, textAlign: "center", width: 40 }}>Qty</th>
-            <th style={{ ...th, textAlign: "right", width: 80 }}>Rate</th>
-            <th style={{ ...th, textAlign: "right", width: 90 }}>Amount</th>
+          <tr style={{ background: "#1a1a1a" }}>
+            {["DESCRIPTION", "QTY", "RATE", "AMOUNT"].map((h, i) => (
+              <th key={h} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.12em", color: "#fff", padding: "9px 10px", textAlign: i === 0 ? "left" : "right", fontWeight: 500 }}>{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {doc.items.filter(it => it.desc || it.cost).map(it => {
+          {doc.items.filter(it => it.desc || it.cost).map((it, idx) => {
             const rate = itemRate(it);
-            const amt = (Number(it.qty) || 0) * rate;
+            const amt  = (Number(it.qty) || 0) * rate;
             return (
-              <tr key={it.id} style={{ borderBottom: "1px solid #F5F5F4" }}>
-                <td style={td}>{it.desc || "—"}</td>
-                <td style={{ ...td, textAlign: "center" }}>{it.qty}</td>
-                <td style={{ ...td, textAlign: "right" }}>{money(rate)}</td>
-                <td style={{ ...td, textAlign: "right", fontWeight: 600 }}>{money(amt)}</td>
+              <tr key={it.id} style={{ borderBottom: "1px solid #eee", background: idx % 2 === 0 ? "#fff" : "#FAFAF9" }}>
+                <td style={{ fontSize: 12, padding: "10px", color: "#1a1a1a" }}>{it.desc || "—"}</td>
+                <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, padding: "10px", textAlign: "right", color: "#444" }}>{it.qty}</td>
+                <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, padding: "10px", textAlign: "right", color: "#444" }}>{money(rate)}</td>
+                <td style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, padding: "10px", textAlign: "right", fontWeight: 600, color: "#1a1a1a" }}>{money(amt)}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
 
+      {/* Totals */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
-        <div style={{ width: 240 }}>
-          <Row k="Subtotal" v={money(t.sub)} />
-          <Row k={`${settings.taxLabel} (${doc.taxRate || 0}%)`} v={money(t.tax)} />
-          <div style={{ height: 2, background: "#1C1917", margin: "8px 0" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 18 }}>
-            <span>Total</span><span style={{ color: accent }}>{money(t.total)}</span>
+        <div style={{ width: 240, border: "1px solid #e0e0e0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderBottom: "1px solid #eee" }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#888", letterSpacing: "0.08em" }}>SUBTOTAL</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>{money(t.sub)}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", borderBottom: "2px solid #1a1a1a" }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#888", letterSpacing: "0.08em" }}>{settings.taxLabel?.toUpperCase()} ({doc.taxRate || 0}%)</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11 }}>{money(t.tax)}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "12px", background: "#1a1a1a" }}>
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: "0.1em", color: "#fff" }}>TOTAL</span>
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 20, letterSpacing: "0.04em", color: "#E07B2A" }}>{money(t.total)}</span>
           </div>
         </div>
       </div>
 
       {doc.warranty && (
-        <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#166534" }}>
-          ✓ {doc.warranty}
+        <div style={{ border: "1px solid #d4edda", background: "#f8fff9", padding: "10px 14px", marginBottom: 16 }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#2d6a4f", letterSpacing: "0.08em" }}>WARRANTY: {doc.warranty.toUpperCase()}</span>
         </div>
       )}
-      {doc.notes && <div style={{ marginBottom: 16 }}><div style={noteLabel}>Notes</div><div style={{ fontSize: 13, color: "#44403C" }}>{doc.notes}</div></div>}
-      {settings.terms && <div style={{ marginBottom: 24 }}><div style={noteLabel}>Terms</div><div style={{ fontSize: 12, color: "#78716C" }}>{settings.terms}</div></div>}
+      {doc.notes    && <div style={{ marginBottom: 14 }}><PrintLabel>NOTES</PrintLabel><div style={{ fontSize: 12, color: "#444" }}>{doc.notes}</div></div>}
+      {settings.terms && <div style={{ marginBottom: 24 }}><PrintLabel>TERMS</PrintLabel><div style={{ fontSize: 11, color: "#666" }}>{settings.terms}</div></div>}
 
-      <div style={{ display: "flex", gap: 24, marginTop: 32 }}>
+      {/* Signatures */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginTop: 40 }}>
         {[settings.bizName || "Contractor", doc.clientName || "Client"].map(name => (
-          <div key={name} style={{ flex: 1 }}>
-            <div style={{ borderTop: "1.5px solid #1C1917", paddingTop: 6 }}>
-              <div style={{ fontSize: 11, color: "#78716C" }}>{name}</div>
-              <div style={{ fontSize: 11, color: "#A8A29E", marginTop: 2 }}>Signature & Date</div>
-            </div>
+          <div key={name}>
+            <div style={{ height: 40, borderBottom: "1.5px solid #1a1a1a", marginBottom: 6 }} />
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#888", letterSpacing: "0.08em" }}>{name.toUpperCase()} · SIGNATURE & DATE</div>
           </div>
         ))}
       </div>
-      <div style={{ textAlign: "center", marginTop: 32, fontSize: 11, color: "#A8A29E" }}>Thank you for your business.</div>
     </div>
   );
 }
 
-const Field = ({ label, children, style }) => (
+/* ── Small components ── */
+const SectionHead = ({ label }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+    <div style={{ width: 3, height: 18, background: C.accent, flexShrink: 0 }} />
+    <span style={{ fontFamily: C.display, fontWeight: 800, fontSize: 14, letterSpacing: "0.14em", color: C.bright, textTransform: "uppercase" }}>{label}</span>
+  </div>
+);
+const Label = ({ children, style }) => (
+  <div style={{ fontFamily: C.mono, fontSize: 9, color: C.muted, letterSpacing: "0.15em", marginBottom: 6, ...style }}>{children}</div>
+);
+const PrintLabel = ({ children }) => (
+  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.15em", color: "#999", textTransform: "uppercase", marginBottom: 5 }}>{children}</div>
+);
+const FField = ({ label, children, style }) => (
   <div style={{ marginBottom: 14, ...style }}>
-    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#44403C", marginBottom: 6 }}>{label}</label>
+    <Label>{label}</Label>
     {children}
   </div>
 );
-const Row = ({ k, v }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 14, color: "#44403C" }}>
-    <span>{k}</span><span>{v}</span>
+const FInput = ({ value, placeholder, onChange, numeric }) => (
+  <input value={value} placeholder={placeholder}
+    inputMode={numeric ? "decimal" : "text"}
+    onChange={e => onChange(numeric ? e.target.value.replace(/[^0-9.]/g, "") : e.target.value)}
+    style={inputStyle} />
+);
+const TRow = ({ k, v }) => (
+  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", borderBottom: `1px solid ${C.border}` }}>
+    <span style={{ fontFamily: C.mono, fontSize: 11, color: C.muted, letterSpacing: "0.08em" }}>{k}</span>
+    <span style={{ fontFamily: C.mono, fontSize: 11, color: C.text }}>{v}</span>
   </div>
 );
-const Stat = ({ label, value, hint, accent }) => (
-  <div style={{ flex: 1, background: "#fff", border: "1px solid #E7E5E4", borderRadius: 14, padding: "14px 16px" }}>
-    <div style={{ fontSize: 11, color: "#A8A29E", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
-    <div style={{ fontSize: 20, fontWeight: 800, color: accent, margin: "4px 0 1px" }}>{value}</div>
-    <div style={{ fontSize: 11, color: "#A8A29E" }}>{hint}</div>
-  </div>
+const AccentBtn = ({ children, onClick, style }) => (
+  <button onClick={onClick} style={{ width: "100%", background: C.accent, border: "none", color: "#fff", fontFamily: C.display, fontWeight: 800, fontSize: 13, letterSpacing: "0.14em", padding: "12px", cursor: "pointer", height: 44, ...style }}>
+    {children}
+  </button>
+);
+const GhostBtn = ({ children, onClick }) => (
+  <button onClick={onClick} style={{ width: "100%", background: "none", border: `1px solid ${C.border2}`, color: C.soft, fontFamily: C.display, fontWeight: 700, fontSize: 13, letterSpacing: "0.14em", padding: "12px", cursor: "pointer", height: 44 }}>
+    {children}
+  </button>
 );
 
-const brand = "'DM Serif Display', serif";
-const wrap = { fontFamily: "'DM Sans', system-ui, sans-serif", background: "#FAFAF9", minHeight: "100vh", color: "#1C1917", maxWidth: 560, margin: "0 auto" };
-const topbar = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "#fff", borderBottom: "1px solid #E7E5E4", position: "sticky", top: 0, zIndex: 10 };
-const logoDot = { width: 36, height: 36, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 };
-const pad = { padding: "18px" };
-const pageTitle = { fontFamily: "'DM Serif Display', serif", fontSize: 24, margin: "0 0 4px", color: "#1C1917", fontWeight: 400 };
-const subtle = { fontSize: 13, color: "#A8A29E", margin: "0 0 18px" };
-const sectionLabel = { fontSize: 11, fontWeight: 700, color: "#44403C", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.08em" };
-const input = { width: "100%", border: "1.5px solid #E7E5E4", borderRadius: 10, padding: "10px 12px", fontSize: 14, background: "#fff", color: "#1C1917" };
-const primaryBtn = { width: "100%", color: "#fff", border: "none", borderRadius: 11, padding: "13px", fontSize: 15, fontWeight: 700, cursor: "pointer" };
-const outlineBtn = { background: "#fff", border: "1.5px solid", borderRadius: 11, padding: "12px 14px", fontSize: 14, fontWeight: 600, cursor: "pointer" };
-const iconBtn = { background: "#F5F5F4", border: "none", borderRadius: 9, width: 38, height: 38, fontSize: 18, cursor: "pointer" };
-const backBtn = { background: "none", border: "none", color: "#78716C", fontSize: 14, cursor: "pointer", padding: 0, fontWeight: 600 };
-const listRow = { display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", background: "#fff", border: "1px solid #E7E5E4", borderRadius: 12, marginBottom: 8, cursor: "pointer" };
-const badge = { fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, letterSpacing: "0.03em" };
-const empty = { textAlign: "center", color: "#A8A29E", fontSize: 14, padding: "50px 20px", lineHeight: 1.6 };
-const itemCard = { background: "#fff", border: "1px solid #E7E5E4", borderRadius: 12, padding: "12px", marginBottom: 8 };
-const curPrefix = { position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: "#A8A29E", fontSize: 14 };
-const delBtn = { background: "#FEF2F2", color: "#DC2626", border: "none", borderRadius: 8, width: 30, height: 30, fontSize: 18, cursor: "pointer", flexShrink: 0 };
-const totalsBox = { background: "#fff", border: "1px solid #E7E5E4", borderRadius: 12, padding: "12px 16px", marginTop: 12 };
-const chip = { background: "#fff", border: "1.5px solid #E7E5E4", color: "#78716C", borderRadius: 20, padding: "7px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" };
-const sheet = { background: "#fff", maxWidth: 520, margin: "16px", padding: "32px 28px", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,.08)", fontFamily: "'DM Sans', system-ui, sans-serif" };
-const th = { textAlign: "left", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#A8A29E", padding: "0 0 8px", fontWeight: 700 };
-const td = { fontSize: 13, color: "#1C1917", padding: "10px 0", verticalAlign: "top" };
-const noteLabel = { fontSize: 10, letterSpacing: "0.12em", color: "#A8A29E", textTransform: "uppercase", marginBottom: 4 };
+const inputStyle = {
+  width: "100%", background: C.surface, border: `1px solid ${C.border2}`, color: C.bright,
+  padding: "10px 12px", fontSize: 14, fontFamily: C.sans, outline: "none",
+};
